@@ -1,0 +1,6 @@
+raw_data.zip
+.DS_Store
+.env
+*.csv
+pycache/
+data/
