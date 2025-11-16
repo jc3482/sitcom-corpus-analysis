@@ -4,3 +4,4 @@ raw_data.zip
 *.csv
 pycache/
 data/
+raw_data/
