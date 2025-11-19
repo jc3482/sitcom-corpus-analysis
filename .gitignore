@@ -1,8 +1,30 @@
-raw_data.zip
+# -----------------------------
+# Python cache & compiled files
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.env/
+.venv/
+venv/
+ENV/
+
+# -----------------------------
+# macOS system files
+# -----------------------------
 .DS_Store
-.env
-*.csv
-pycache/
-data/
+
+# -----------------------------
+# Project data files
+# -----------------------------
 raw_data/
-./mbti_prediction/
+data/
+*.zip
+*.csv
+
+
+# Jupyter notebooks checkpoints
+.ipynb_checkpoints/
