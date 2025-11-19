@@ -5,3 +5,4 @@ raw_data.zip
 pycache/
 data/
 raw_data/
+./mbti_prediction/
