@@ -44,7 +44,6 @@ dist/
 # -----------------------------
 information_retrieval/cache/
 saved_models/
-*.pkl
 
 # -----------------------------
 # IDE and editors
