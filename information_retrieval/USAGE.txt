@@ -1,16 +1,5 @@
-INFORMATION RETRIEVAL PACKAGE - Reference
+INFORMATION RETRIEVAL USAGE
 ===============================================
-
-STRUCTURE:
-----------
-information_retrieval/
-├── __init__.py      # Package initialization
-├── __main__.py      # CLI entry point
-└── search.py        # Core search functions
-
-USAGE:
-------
-
 1. Search one show:
    python -m information_retrieval search friends "coffee shop"
    python -m information_retrieval search tbbt "physics&quantum" --top 10
@@ -31,10 +20,3 @@ QUERY SYNTAX:
 "coffee shop"    - Exact phrase
 "coffee&shop"    - AND (both must appear)
 "coffee/shop"    - OR (either must appear)
-
-IMPORT AS LIBRARY:
-------------------
-from information_retrieval import search_episodes, load_show_data
-
-episodes = load_show_data('friends')
-results = search_episodes(episodes, "coffee&shop", top_k=5)

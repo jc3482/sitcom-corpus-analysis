@@ -11,6 +11,8 @@ __pycache__/
 .venv/
 venv/
 ENV/
+sitcom-env/
+env/
 
 # -----------------------------
 # macOS system files
@@ -28,3 +30,27 @@ data/
 
 # Jupyter notebooks checkpoints
 .ipynb_checkpoints/
+
+# -----------------------------
+# Package distribution / build
+# -----------------------------
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# -----------------------------
+# IR cache and models
+# -----------------------------
+information_retrieval/cache/
+saved_models/
+*.pkl
+
+# -----------------------------
+# IDE and editors
+# -----------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
