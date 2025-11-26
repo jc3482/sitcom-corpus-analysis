@@ -1,6 +1,38 @@
 import re
 from nltk.corpus import stopwords
+import re
+from nltk.corpus import stopwords, wordnet
+from nltk import pos_tag
+from nltk.stem import WordNetLemmatizer
 import pandas as pd
+
+
+lemmatizer = WordNetLemmatizer()
+
+def get_wordnet_pos(treebank_tag):
+
+    if treebank_tag.startswith('J'):
+        return wordnet.ADJ
+    elif treebank_tag.startswith('V'):
+        return wordnet.VERB
+    elif treebank_tag.startswith('N'):
+        return wordnet.NOUN
+    elif treebank_tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN
+
+def lemmatize_sentence(text: str) -> str:
+    tokens = text.split()
+    if not tokens:
+        return ""
+    tagged = pos_tag(tokens)
+    lemmas = [
+        lemmatizer.lemmatize(word, get_wordnet_pos(tag))
+        for word, tag in tagged
+    ]
+    return " ".join(lemmas)
+
 
 def preprocess_text(
     df,
@@ -20,7 +52,7 @@ def preprocess_text(
         lambda x: re.sub(r'https?:\/\/\S+', '', x.replace("|", " "))
     )
     # 2. Keep the End Of Sentence characters
-    if searching == True:
+    if searching == False:
         df[column_name] = df[column_name].apply(lambda x: re.sub(r'\.', ' EOSTokenDot ', x + " "))
         df[column_name] = df[column_name].apply(lambda x: re.sub(r'\?', ' EOSTokenQuest ', x + " "))
         df[column_name] = df[column_name].apply(lambda x: re.sub(r'!', ' EOSTokenExs ', x + " "))
@@ -34,8 +66,8 @@ def preprocess_text(
     # 5. Remove non-letter characters
     df[column_name] = df[column_name].apply(lambda x: re.sub(r'[^a-z\s]', ' ', x))
 
-    # 6. Normalize whitespace (so split() is clean)
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
+    # 6. Lemmatization
+    df[column_name] = df[column_name].apply(lemmatize_sentence)
 
     # 7. Reduce repeated letters ("soooo" → "soo")
     df[column_name] = df[column_name].apply(
@@ -118,12 +150,12 @@ def preprocess_text(
     ]
     names = set([n.lower() for n in names])
 
-    if searching == True:
+    if searching == False:
         df[column_name] = df[column_name].apply(
             lambda text: " ".join([w for w in text.split() if w not in names])
         )
 
-    # Final whitespace normalize
+    # 12. Final whitespace normalize
     df[column_name] = df[column_name].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
 
     return df

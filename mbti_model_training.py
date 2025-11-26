@@ -1,12 +1,53 @@
 import re
+from nltk.corpus import stopwords, wordnet
+from nltk import pos_tag
+from nltk.stem import WordNetLemmatizer
 import pandas as pd
-from nltk.corpus import stopwords
-import pandas as pd
+from sklearn.feature_extraction.text import TfidfVectorizer
+from xgboost import XGBClassifier
+from sklearn.model_selection import RandomizedSearchCV
+from scipy.stats import randint, uniform
+import os
+import joblib
+
+lemmatizer = WordNetLemmatizer()
+
+# import nltk
+# nltk.download('stopwords')
+# nltk.download('wordnet')
+# nltk.download('averaged_perceptron_tagger')
+
+
+def get_wordnet_pos(treebank_tag):
+
+    if treebank_tag.startswith('J'):
+        return wordnet.ADJ
+    elif treebank_tag.startswith('V'):
+        return wordnet.VERB
+    elif treebank_tag.startswith('N'):
+        return wordnet.NOUN
+    elif treebank_tag.startswith('R'):
+        return wordnet.ADV
+    else:
+        return wordnet.NOUN
+
+def lemmatize_sentence(text: str) -> str:
+    tokens = text.split()
+    if not tokens:
+        return ""
+    tagged = pos_tag(tokens)
+    lemmas = [
+        lemmatizer.lemmatize(word, get_wordnet_pos(tag))
+        for word, tag in tagged
+    ]
+    return " ".join(lemmas)
+
 
 def preprocess_text(
     df,
     column_name,
     remove_mbti_words=False,
+    searching = True
 ):
     df = df.copy()
 
@@ -20,9 +61,10 @@ def preprocess_text(
         lambda x: re.sub(r'https?:\/\/\S+', '', x.replace("|", " "))
     )
     # 2. Keep the End Of Sentence characters
-    df["posts"] = df["posts"].apply(lambda x: re.sub(r'\.', ' EOSTokenDot ', x + " "))
-    df["posts"] = df["posts"].apply(lambda x: re.sub(r'\?', ' EOSTokenQuest ', x + " "))
-    df["posts"] = df["posts"].apply(lambda x: re.sub(r'!', ' EOSTokenExs ', x + " "))
+    if searching == False:
+        df[column_name] = df[column_name].apply(lambda x: re.sub(r'\.', ' EOSTokenDot ', x + " "))
+        df[column_name] = df[column_name].apply(lambda x: re.sub(r'\?', ' EOSTokenQuest ', x + " "))
+        df[column_name] = df[column_name].apply(lambda x: re.sub(r'!', ' EOSTokenExs ', x + " "))
 
     # 3. Lowercase EARLY
     df[column_name] = df[column_name].str.lower()
@@ -33,8 +75,9 @@ def preprocess_text(
     # 5. Remove non-letter characters
     df[column_name] = df[column_name].apply(lambda x: re.sub(r'[^a-z\s]', ' ', x))
 
-    # 6. Normalize whitespace (so split() is clean)
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
+    # 6. Lemmatization
+    if searching == True:
+        df[column_name] = df[column_name].apply(lemmatize_sentence)
 
     # 7. Reduce repeated letters ("soooo" → "soo")
     df[column_name] = df[column_name].apply(
@@ -117,11 +160,12 @@ def preprocess_text(
     ]
     names = set([n.lower() for n in names])
 
-    df[column_name] = df[column_name].apply(
-        lambda text: " ".join([w for w in text.split() if w not in names])
-    )
+    if searching == False:
+        df[column_name] = df[column_name].apply(
+            lambda text: " ".join([w for w in text.split() if w not in names])
+        )
 
-    # Final whitespace normalize
+    # 12. Final whitespace normalize
     df[column_name] = df[column_name].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
 
     return df
@@ -145,94 +189,97 @@ def add_mbti_binary_columns(df, type_col="type"):
     return df
 
 data = pd.read_csv("raw_data/mbti_data.csv")
-
-data = preprocess_text(data,column_name="posts",remove_mbti_words=True)
+data = preprocess_text(data, column_name="posts", remove_mbti_words=True, searching= False)
 df_encoded = add_mbti_binary_columns(data, type_col="type")
 
-from sklearn.feature_extraction.text import TfidfVectorizer
-
-# Fit TF–IDF on the cleaned posts
-tfidf = TfidfVectorizer(max_features=1500)   # no stop_words argument
-X = tfidf.fit_transform(df_encoded["posts"]) # Sparse matrix (n_samples × 1500)
+tfidf = TfidfVectorizer(max_features=1500)
+X = tfidf.fit_transform(df_encoded["posts"])
 
 
-from xgboost import XGBClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import accuracy_score, classification_report
-
-# Columns for each dimension
 dimension_cols = ["EI", "SN", "TF", "JP"]
 
-# XGBoost hyperparameters (you can tune these)
-xgb_params = {
-    "n_estimators": 200,
-    "max_depth": 5,
-    "learning_rate": 0.05,
-    "objective": "binary:logistic",
-    "eval_metric": "logloss",
-    "subsample": 0.8,
-    "colsample_bytree": 0.8,
-    "random_state": 7,
+
+param_distributions = {
+    "n_estimators": randint(100, 400),      # integer between 100 and 399
+    "max_depth": randint(3, 8),             # 3–7
+    "learning_rate": uniform(0.01, 0.15),   # 0.01–0.16
+    "subsample": uniform(0.6, 0.4),         # 0.6–1.0
+    "colsample_bytree": uniform(0.6, 0.4),  # 0.6–1.0
 }
 
-models = {}
-scores = {}
+best_params_per_dim = {}
+best_scores_per_dim = {}
 
 for dim in dimension_cols:
-    print(f"\n=== Training XGBoost for {dim} ===")
+    print(f"\n=== Random search for {dim} ===")
     y = df_encoded[dim].values
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.33, random_state=7, stratify=y
+    base_model = XGBClassifier(
+        objective="binary:logistic",
+        eval_metric="logloss",
+        random_state=7
     )
 
-    model = XGBClassifier(**xgb_params)
-    model.fit(X_train, y_train)
+    rand_search = RandomizedSearchCV(
+        estimator=base_model,
+        param_distributions=param_distributions,
+        n_iter=30,
+        scoring="accuracy",  # or "f1"
+        cv=3,
+        n_jobs=-1,
+        verbose=1,
+        random_state=42
+    )
 
-    y_pred = model.predict(X_test)
-    acc = accuracy_score(y_test, y_pred)
+    rand_search.fit(X, y)
 
-    print(f"Accuracy for {dim}: {acc:.4f}")
-    print(classification_report(y_test, y_pred))
+    print(f"Best score for {dim}: {rand_search.best_score_:.4f}")
+    print("Best params:", rand_search.best_params_)
 
-    models[dim] = model
-    scores[dim] = acc
+    best_params_per_dim[dim] = rand_search.best_params_
+    best_scores_per_dim[dim] = rand_search.best_score_
 
 
-def predict_mbti_for_text(
-    raw_text,
-    tfidf_vectorizer,
-    models,
-    text_col_name="posts",
-    remove_mbti_words=True,
-):
-    # Put text into a one-row DataFrame
-    tmp_df = pd.DataFrame({text_col_name: [raw_text], "type": ["INTP"]})  
-    # dummy type just to satisfy preprocess/add_mbti if needed
+final_models = {}
 
-    # Apply same preprocessing (this will also remove stopwords, names, etc.)
-    tmp_df = preprocess_text(tmp_df, text_col_name, remove_mbti_words=remove_mbti_words)
+for dim in dimension_cols:
+    print(f"\n=== Training FINAL model for {dim} with best params ===")
+    y = df_encoded[dim].values
+    best_params = best_params_per_dim[dim]
 
-    # TF–IDF transform using the pre-fitted vectorizer
-    X_new = tfidf_vectorizer.transform(tmp_df[text_col_name])
+    final_model = XGBClassifier(
+        objective="binary:logistic",
+        eval_metric="logloss",
+        random_state=7,
+        **best_params
+    )
 
-    # Predict each dimension
-    letter_map = {
+    final_model.fit(X, y)
+    final_models[dim] = final_model
+
+
+bundle = {
+    "tfidf": tfidf,
+    "models": final_models,                 # dict: {"EI": model, "SN": model, ...}
+    "best_params": best_params_per_dim,     # best params found by RandomizedSearchCV
+    "cv_scores": best_scores_per_dim,       # mean CV scores from tuning
+    "label_mapping": {
         "EI": {1: "E", 0: "I"},
         "SN": {1: "S", 0: "N"},
         "TF": {1: "T", 0: "F"},
         "JP": {1: "J", 0: "P"},
+    },
+    "preprocessing_info": {
+        "column_name": "posts",
+        "remove_mbti_words": True,
+        "searching": False,
+        "max_features_tfidf": 1500,
     }
-
-    result_letters = []
-    for dim in ["EI", "SN", "TF", "JP"]:
-        model = models[dim]
-        y_pred = model.predict(X_new)[0]
-        result_letters.append(letter_map[dim][int(y_pred)])
-
-    return "".join(result_letters)
+}
 
 
-example_text = "I love solving abstract problems and discussing theories with my friends."
-pred_type = predict_mbti_for_text(example_text, tfidf, models)
-print("Predicted MBTI:", pred_type)
+os.makedirs("saved_models", exist_ok=True)
+save_path = "saved_models/mbti_bundle.pkl"
+
+joblib.dump(bundle, save_path)
+print("Bundle keys:", list(bundle.keys()))
