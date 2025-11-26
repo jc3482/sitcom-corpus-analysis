@@ -1,0 +1,32 @@
+# Conda environment file for sitcom-corpus-analysis
+# 使用方法: conda env create -f environment.yml
+
+name: sitcom-env
+
+channels:
+  - conda-forge
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip>=23.0
+  
+  # 通过 conda 安装的包（更好的依赖解析）
+  - pandas>=2.0.0
+  - numpy>=1.24.0,<2.3.0
+  - scikit-learn>=1.3.0
+  - scipy>=1.11.0
+  - joblib>=1.3.0
+  
+  # 通过 pip 安装的包（conda 中不常用的）
+  - pip:
+    - rank-bm25>=0.2.2
+    - spacy>=3.8.0
+    - nltk>=3.8.0
+    - xgboost>=2.0.0
+    
+    # 开发工具（可选）
+    # - jupyter>=1.0.0
+    # - notebook>=7.0.0
+    # - ipython>=8.0.0
+
