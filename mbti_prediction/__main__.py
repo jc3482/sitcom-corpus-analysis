@@ -1,4 +1,4 @@
-from mbti_prediction import (
+from .mbti_prediction import (
     load_bundle,
     load_all_dialogues,
     predict_mbti_for_character,

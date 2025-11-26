@@ -4,9 +4,9 @@ import pandas as pd
 import joblib
 import numpy as np
 
-from data_processing import preprocess_text
+from .data_processing import preprocess_text
 
-BUNDLE_PATH = "mbti_bundle.pkl"
+BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_bundle.pkl")
 RAW_DATA_DIR = "../raw_data"
 
 SHOW_FILES = {
@@ -47,7 +47,12 @@ SHOW_ALIASES = {
 
 # Load bundle
 def load_bundle(bundle_path: str = BUNDLE_PATH):
-    """Load the trained MBTI bundle (tfidf + 4 models + metadata)."""
+    """
+    Load the trained MBTI bundle (tfidf + 4 models + metadata).
+
+    By default, it loads 'mbti_bundle.pkl' from the same directory
+    as this file (the mbti_prediction package folder).
+    """
     if not os.path.exists(bundle_path):
         print(f"[ERROR] Model bundle not found at: {bundle_path}")
         sys.exit(1)
@@ -59,6 +64,7 @@ def load_bundle(bundle_path: str = BUNDLE_PATH):
     preproc_info = bundle.get("preprocessing_info", {})
 
     return tfidf, models, label_mapping, preproc_info
+
 
 
 # Load & preprocess dialogues
