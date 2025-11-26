@@ -1,0 +1,101 @@
+===========================================
+MBTI Personality Prediction – Command Line
+===========================================
+
+This tool predicts the MBTI personality type of any sitcom character
+and extracts the top 5 dialogue lines that best reflect their personality.
+
+You can run it from the terminal using:
+
+    sitcom-mbti
+
+-------------------------------------------
+1. Basic Usage
+-------------------------------------------
+
+Run the command and follow the interactive prompts:
+
+    $ sitcom-mbti
+
+You will be asked to enter:
+
+    1. The TV show name  (e.g., Friends)
+    2. The character name (e.g., Ross)
+
+Example session:
+
+    Enter show name: Friends
+    Enter character name: Ross
+    --> Predicted MBTI: ISTJ
+    --> Top 5 representative quotes printed below...
+
+
+-------------------------------------------
+2. Supported Datasets
+-------------------------------------------
+
+The model can run on the following included sitcom dialogue data:
+
+    - friends_dialogues.csv
+    - modern_family_scripts.csv
+    - seinfeld_scripts.csv
+    - tbbt_dialogues.csv
+    - the_office.csv
+
+Each dataset contains:
+
+    episode_title, season, episode, character, dialogue
+
+
+-------------------------------------------
+3. How MBTI Prediction Works
+-------------------------------------------
+
+The prediction is made using:
+
+    ✓ Custom text preprocessing (lemmatization, stopword removal)
+    ✓ TF–IDF vectorization (1500 features)
+    ✓ 4 independent XGBoost classifiers:
+          • EI (Extraversion vs. Introversion)
+          • SN (Sensing vs. Intuition)
+          • TF (Thinking vs. Feeling)
+          • JP (Judging vs. Perceiving)
+
+The trained model bundle is stored in:
+    mbti_model/mbti_bundle.pkl
+
+
+-------------------------------------------
+4. Available Functions (Python usage)
+-------------------------------------------
+
+Inside Python you can also call:
+
+    from mbti_model import (
+        load_mbti_bundle,
+        predict_mbti_for_text,
+        predict_mbti_for_dialogues,
+        preprocess_text
+    )
+
+Example:
+
+    bundle = load_mbti_bundle()
+    predict_mbti_for_text("I enjoy solving theoretical problems.", bundle)
+
+
+-------------------------------------------
+5. Troubleshooting
+-------------------------------------------
+
+• If you see an error about missing NLTK data:
+      import nltk
+      nltk.download('stopwords')
+      nltk.download('wordnet')
+      nltk.download('averaged_perceptron_tagger')
+
+• Ensure that your terminal is using the correct conda environment:
+      conda activate sitcom-env
+
+• sitcom-mbti not found?
+      pip install -e .
