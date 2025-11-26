@@ -10,22 +10,30 @@ channels:
 dependencies:
   - python=3.11
   - pip>=23.0
-  
-  # Packages installed via conda (better dependency resolution)
+
+  # Core scientific stack
   - pandas>=2.0.0
   - numpy>=1.24.0,<2.3.0
   - scikit-learn>=1.3.0
   - scipy>=1.11.0
   - joblib>=1.3.0
-  
-  # Packages installed via pip (not commonly available in conda)
+
+  # tqdm (optional progress bars)
+  - tqdm>=4.65.0
+
+  # Pip-only packages
   - pip:
-    - rank-bm25>=0.2.2
-    - spacy>=3.8.0
-    - nltk>=3.8.0
-    - xgboost>=2.0.0
-    
-    # Development tools (optional)
-    # - jupyter>=1.0.0
-    # - notebook>=7.0.0
-    # - ipython>=8.0.0
+      # Ranking / IR
+      - rank-bm25>=0.2.2
+      
+      # NLP tools
+      - spacy>=3.8.0
+      - nltk>=3.8.0
+
+      # Machine learning model
+      - xgboost>=2.0.0
+
+      # OPTIONAL — if you want them (not required)
+      # - jupyter>=1.0.0
+      # - notebook>=7.0.0
+      # - ipython>=8.0.0
