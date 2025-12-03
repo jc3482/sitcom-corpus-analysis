@@ -1,0 +1,159 @@
+SITCOM ANALYSIS - UNIFIED INTERFACE
+====================================
+
+The sitcom_analysis package provides a unified interface to both
+information retrieval and MBTI prediction, plus combined features.
+
+INSTALLATION
+------------
+pip install -e .
+
+After installation, the "sitcom" command is available system-wide.
+
+
+COMMAND LINE USAGE
+------------------
+
+1. INFORMATION RETRIEVAL (delegated to information_retrieval package)
+
+   List available shows:
+   $ sitcom list
+
+   Search a specific show:
+   $ sitcom search friends "coffee shop"
+   $ sitcom search tbbt "physics&quantum" --top 10
+
+   Search all shows:
+   $ sitcom search-all "wedding"
+
+
+2. MBTI PREDICTION (delegated to mbti_prediction package)
+
+   Interactive character analysis:
+   $ sitcom mbti
+   
+   Follow the prompts to enter show name and character name.
+
+
+3. COMBINED FEATURES (NEW)
+
+   Search episodes + show character personalities:
+   $ sitcom analyze friends "wedding"
+   $ sitcom analyze tbbt "science&theory" --top 10
+   
+   Get character MBTI profile:
+   $ sitcom character friends "Ross Geller"
+   
+   Get character MBTI + search their dialogue:
+   $ sitcom character friends "Ross" "dinosaurs"
+   
+   List all major character personalities in a show:
+   $ sitcom personalities friends
+   $ sitcom personalities tbbt --limit 15
+
+
+PYTHON API
+----------
+
+Import from the unified package:
+
+    from sitcom_analysis import (
+        # Information Retrieval
+        search_episodes,
+        load_show_data,
+        
+        # MBTI Prediction
+        load_bundle,
+        predict_mbti_for_character,
+        
+        # Combined Features
+        search_with_character_info,
+        analyze_character_moments,
+        get_character_mbti
+    )
+
+Example 1: Search with character info
+
+    results, char_mbti = search_with_character_info(
+        show='friends',
+        query='wedding',
+        top_k=5
+    )
+    
+    print(results)  # DataFrame with search results
+    print(char_mbti)  # Dict of {character: mbti}
+
+
+Example 2: Character analysis
+
+    analysis = analyze_character_moments(
+        show='friends',
+        character='Ross Geller',
+        query='dinosaurs',  # optional
+        top_k=5
+    )
+    
+    print(analysis['mbti'])
+    print(analysis['probabilities'])
+    print(analysis['top_quotes'])
+    print(analysis['matching_moments'])  # if query provided
+
+
+Example 3: Get character MBTI only
+
+    mbti_info = get_character_mbti('friends', 'Ross Geller')
+    print(mbti_info['mbti'])
+    print(mbti_info['probabilities'])
+
+
+BACKWARD COMPATIBILITY
+----------------------
+
+All original commands still work:
+
+    python -m information_retrieval search friends "coffee"
+    python -m mbti_prediction
+    
+    sitcom-search search friends "coffee"
+    sitcom-mbti
+
+The new "sitcom" command is an addition, not a replacement.
+
+
+SHOW KEYS
+---------
+friends         Friends
+tbbt            The Big Bang Theory
+seinfeld        Seinfeld
+office          The Office
+modern_family   Modern Family
+
+
+OPTIONS
+-------
+--top N              Number of results to return (default: 5)
+--title-weight N     Boost weight for title matches (default: 2)
+--limit N            Number of characters to analyze (for personalities)
+
+
+EXAMPLES
+--------
+
+# Find wedding episodes and see which characters are involved
+$ sitcom analyze friends "wedding"
+
+# Analyze Ross's personality and find his dinosaur-related moments
+$ sitcom character friends "Ross" "dinosaurs"
+
+# Get MBTI types for all main TBBT characters
+$ sitcom personalities tbbt
+
+# Search for thanksgiving episodes across all shows
+$ sitcom search-all "thanksgiving"
+
+# Get Monica's personality profile
+$ sitcom character friends "Monica Geller"
+
+
+For more details, see README.md
+

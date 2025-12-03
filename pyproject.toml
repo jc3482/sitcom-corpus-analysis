@@ -37,9 +37,10 @@ dev = [
 [project.scripts]
 sitcom-search = "information_retrieval.__main__:main"
 sitcom-mbti   = "mbti_prediction.__main__:main"
+sitcom        = "sitcom_analysis.__main__:main"
 
 [tool.setuptools]
-packages = ["information_retrieval", "mbti_prediction"]
+packages = ["information_retrieval", "mbti_prediction", "sitcom_analysis"]
 
 [tool.setuptools.package-data]
 "*" = ["*.txt"]

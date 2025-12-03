@@ -1,4 +1,5 @@
 # Sitcom Corpus Analysis
+## Author: Stacy Che, Qiyue Gu, Herry Wei
 
 A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrieval** and **MBTI Personality Prediction** capabilities.
 
@@ -10,49 +11,87 @@ A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrie
 # Create conda environment
 conda env create -f environment.yml
 
-# Activate environment
+# Activate environment (always activate before using)
 conda activate sitcom-env
+
+# Install package in editable mode
+pip install -e .
 
 # Download NLP models
 python -m spacy download en_core_web_sm
 python -c "import nltk; nltk.download('stopwords'); nltk.download('wordnet'); nltk.download('averaged_perceptron_tagger')"
+
+# Verify installation
+python verify_installation.py
+
+# Install testing dependencies
+pip install pytest pytest-cov
 ```
 
 ### 2. Usage Examples
 
-#### Information Retrieval
+#### Unified Interface 
 
 ```bash
-# Search a single show
-python -m information_retrieval search friends "coffee shop"
+# Information Retrieval
+sitcom search friends "coffee shop"
+sitcom search-all "thanksgiving"
+sitcom list
 
-# AND operator (both terms must appear)
-python -m information_retrieval search tbbt "physics&quantum" --top 10
+# MBTI Personality Prediction
+sitcom mbti
 
-# OR operator (either term can appear)
-python -m information_retrieval search office "meeting/conference"
-
-# Search across all shows
-python -m information_retrieval search-all "thanksgiving"
-
-# List available shows
-python -m information_retrieval list
+# Combined Features 
+sitcom analyze friends "wedding"                  # Search + character personalities
+sitcom character friends "Ross Geller"            # Character MBTI profile
+sitcom character friends "Ross" "dinosaurs"       # Character MBTI + search dialogue
+sitcom personalities friends                      # List all character MBTIs
 ```
 
-#### MBTI Personality Prediction
+#### Individual Package Interfaces
 
 ```bash
-# Train the model
-python mbti_model_training.py
+# Information Retrieval
+python -m information_retrieval search friends "coffee shop"
+sitcom-search search friends "coffee shop"
 
-# Predict character personality
-python mbti_prediction/predict_characters.py raw_data/tbbt_dialogues.csv Sheldon
+# MBTI Prediction
+python -m mbti_prediction
+sitcom-mbti
+```
 
-# Predict multiple characters
-python mbti_prediction/predict_characters.py raw_data/friends_dialogues.csv Rachel Ross Monica
+#### Python API
 
-# Predict all major characters
-python mbti_prediction/predict_characters.py raw_data/tbbt_dialogues.csv --all
+```python
+# Information Retrieval
+from information_retrieval import search_episodes, load_show_data
+episodes = load_show_data('friends')
+results = search_episodes(episodes, "coffee", 5)
+
+# MBTI Prediction
+from mbti_prediction import load_bundle, predict_mbti_for_character, load_all_dialogues
+tfidf, models, labels, _ = load_bundle()
+df = load_all_dialogues()
+mbti, probs, _ = predict_mbti_for_character(tfidf, models, labels, df, 'friends', 'Ross')
+
+# Combined Features (NEW)
+from sitcom_analysis import (
+    search_with_character_info, 
+    analyze_character_moments,
+    get_character_mbti
+)
+
+# Search with character info
+results, char_mbti = search_with_character_info('friends', 'wedding')
+
+# Character analysis with dialogue search
+analysis = analyze_character_moments('friends', 'Ross', 'dinosaurs')
+print(analysis['mbti'])
+print(analysis['top_quotes'])
+
+# Just get MBTI quickly
+mbti_info = get_character_mbti('friends', 'Ross')
+print(mbti_info['mbti'])
 ```
 
 ## Project Structure
@@ -71,36 +110,72 @@ sitcom-corpus-analysis/
 │   └── cache_utils.py         # Caching utilities
 │
 ├── mbti_prediction/            # MBTI prediction module
-│   ├── predict_characters.py  # Character prediction script
-│   └── run_mbti_model.py      # Model training
+│   ├── __main__.py            # CLI entry point
+│   ├── mbti_prediction.py     # Core prediction logic
+│   ├── data_processing.py     # Text preprocessing
+│   ├── mbti_model_training.py # Model training
+│   └── mbti_bundle.pkl        # Trained models
 │
-├── raw_data/                   # Data files
-│   ├── friends_dialogues.csv
-│   ├── tbbt_dialogues.csv
-│   ├── seinfeld_scripts.csv
-│   ├── the_office.csv
-│   ├── modern_family_scripts.csv
-│   └── mbti_data.csv
+├── sitcom_analysis/            # Unified integration layer 
+│   ├── __init__.py            # Exports from both packages
+│   ├── __main__.py            # Unified CLI
+│   └── combined_features.py   # Cross-package features
 │
-└── mbti_model_training.py      # Model training pipeline
+└── raw_data/                   # Data files
+    ├── friends_dialogues.csv
+    ├── tbbt_dialogues.csv
+    ├── seinfeld_scripts.csv
+    ├── the_office.csv
+    ├── modern_family_scripts.csv
+    └── mbti_data.csv
 ```
 
 ## Supported Shows
 
-- Friends
-- The Big Bang Theory (TBBT)
-- Seinfeld
-- The Office
-- Modern Family
+| Show Key | Show Name |
+|----------|-----------|
+| `friends` | Friends |
+| `tbbt` | The Big Bang Theory |
+| `seinfeld` | Seinfeld |
+| `office` | The Office |
+| `modern_family` | Modern Family |
+
+## Features
+
+### Information Retrieval
+- BM25-based episode search with boolean operators
+- Query syntax: phrase, AND (`&`), OR (`/`)
+- Episode snippet extraction with highlighting
+- Title boosting for relevance ranking
+
+### MBTI Personality Prediction
+- 4-dimensional personality classification (E/I, S/N, T/F, J/P)
+- XGBoost models with TF-IDF features
+- Character-level dialogue aggregation
+- Representative quote extraction
+
+### Combined Analysis (NEW)
+- Search episodes with character personality insights
+- Character-focused dialogue search with MBTI context
+- Show-wide personality profiling
 
 ## Query Syntax
+
+### Search Operators
 
 | Syntax | Description | Example |
 |--------|-------------|---------|
 | `"word"` | Phrase search | `"coffee shop"` |
 | `"word1&word2"` | AND (both must appear) | `"wedding&cake"` |
 | `"word1/word2"` | OR (either can appear) | `"wedding/party"` |
-| `--top N` | Limit results to top N | `--top 10` |
+
+### Command Options
+
+| Option | Description | Default |
+|--------|-------------|---------|
+| `--top N` | Number of results to return | 5 |
+| `--title-weight N` | Boost weight for title matches | 2 |
+| `--limit N` | Character limit (for personalities command) | 10 |
 
 ## Technical Stack
 
@@ -112,7 +187,7 @@ sitcom-corpus-analysis/
 
 ## Installation Options
 
-### Option 1: Using Conda (Recommended)
+### Option 1: Using Conda 
 ```bash
 conda env create -f environment.yml
 conda activate sitcom-env
@@ -150,13 +225,107 @@ To install in development mode:
 pip install -e .
 ```
 
-After installation, you can use the CLI command:
+After installation, you can use the CLI commands:
 ```bash
+# Unified interface 
+sitcom list
+sitcom search friends "coffee"
+sitcom mbti
+sitcom analyze friends "wedding"
+
+# Independent interfaces 
 sitcom-search list
-sitcom-search search friends "coffee"
+sitcom-mbti
 ```
+
+### Verify Installation
+
+Test that the integration works correctly:
+```bash
+python verify_installation.py
+```
+
+This will verify that all three packages (information_retrieval, mbti_prediction, and sitcom_analysis) are properly installed and can import from each other.
+
+## Testing
+
+This project includes comprehensive unit tests using pytest.
+
+### Running Tests
+
+```bash
+# Run all tests
+pytest
+
+# Run with verbose output
+pytest -v
+
+# Run specific test file
+pytest tests/test_information_retrieval.py
+
+# Run tests with coverage report
+pytest --cov=information_retrieval --cov=mbti_prediction --cov=sitcom_analysis
+
+# Run tests and generate HTML coverage report
+pytest --cov=information_retrieval --cov=mbti_prediction --cov=sitcom_analysis --cov-report=html
+
+# Run only fast tests (skip integration tests)
+pytest -m "not slow"
+```
+
+### Test Structure
+
+```
+tests/
+├── __init__.py
+├── conftest.py                       # Shared fixtures
+├── test_information_retrieval.py     # IR package tests
+├── test_mbti_prediction.py           # MBTI package tests
+└── test_sitcom_analysis.py           # Integration layer tests
+```
+
+### Test Coverage
+
+The test suite covers:
+- Query parsing and search functionality
+- Text preprocessing for both IR and MBTI
+- MBTI prediction and quote scoring
+- Combined features in integration layer
+- Error handling and edge cases
+
+Run `pytest --cov` to see current coverage statistics.
+
+## Getting Help
+
+```bash
+sitcom help                    # Show all commands and usage
+sitcom list                    # List available shows
+```
+
+For command-specific help, see the documentation files in each package:
+- `sitcom_analysis/USAGE.txt` - Unified CLI documentation
+- `information_retrieval/USAGE.txt` - IR package details
+- `mbti_prediction/USAGE.txt` - MBTI package details
+
+## Additional Documentation
+
+- `verify_installation.py` - Installation verification script
+- `tests/` - Full unit test suite using pytest (73 tests, 52 passing)
+
+## Package Architecture
+
+This project uses a **thin integration layer** approach:
+
+1. **information_retrieval** - BM25 search engine 
+2. **mbti_prediction** - Personality prediction models 
+3. **sitcom_analysis** - Integration layer that coordinates between both packages
+
+All 3 packages are installed together with a single `pip install -e .` command, providing:
+- Backward compatibility with original commands
+- New unified CLI interface
+- Combined features that leverage both packages
 
 ---
 
 **Python Version**: 3.9 - 3.11  
-**Environment Name**: `sitcom-env`
+**Environment Name**: `sitcom-env`  

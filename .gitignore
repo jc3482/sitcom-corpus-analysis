@@ -53,3 +53,12 @@ saved_models/
 *.swp
 *.swo
 *~
+
+# -----------------------------
+# Testing and coverage
+# -----------------------------
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
