@@ -3,13 +3,13 @@ from sentence_transformers import SentenceTransformer, util
 from openai import OpenAI
 import torch
 import os
+import pickle
 
 # ============================================================
 # 1. Load embedding model
 # ============================================================
 print("Loading embedding model...")
 embedder = SentenceTransformer("all-mpnet-base-v2")
-
 
 # ============================================================
 # 2. Initialize OpenAI Client
@@ -20,7 +20,6 @@ if OPENAI_API_KEY is None:
     raise ValueError("OPENAI_API_KEY is not set. Run: export OPENAI_API_KEY='your_key'")
 
 client = OpenAI(api_key=OPENAI_API_KEY)
-
 
 # ============================================================
 # 3. Load sitcom datasets
@@ -40,7 +39,6 @@ df_seinfeld = load_dialogues("raw_data/seinfeld_scripts.csv")
 
 all_data = pd.concat([df_friends, df_tbbt, df_office, df_modern, df_seinfeld])
 
-
 # ============================================================
 # 4. Build character dictionaries
 # ============================================================
@@ -55,22 +53,29 @@ for char, group in all_data.groupby("character"):
 
     lines = [str(x) for x in group["dialogue"].values if isinstance(x, str) and len(x) > 5]
 
-    if len(lines) >= 120:  
+    if len(lines) >= 120:  # Only main characters
         character_dialogues[char] = lines
 
 character_list = sorted(character_dialogues.keys())
 
-
 # ============================================================
-# 5. Precompute embeddings
+# 5. Precompute OR Load Cached Embeddings  (FAST MODE)
 # ============================================================
-print("Computing character embeddings...")
+CACHE_PATH = "embedding_cache.pkl"
 
-character_embeddings = {
-    char: embedder.encode(lines, convert_to_tensor=True)
-    for char, lines in character_dialogues.items()
-}
-
+if os.path.exists(CACHE_PATH):
+    print("Loading cached embeddings...")
+    with open(CACHE_PATH, "rb") as f:
+        character_embeddings = pickle.load(f)
+else:
+    print("Computing embeddings (first run only, takes ~3 min)...")
+    character_embeddings = {
+        char: embedder.encode(lines, convert_to_tensor=True)
+        for char, lines in character_dialogues.items()
+    }
+    with open(CACHE_PATH, "wb") as f:
+        pickle.dump(character_embeddings, f)
+    print("Embeddings cached!")
 
 # ============================================================
 # 6. Style Transfer using OpenAI GPT-4o-mini
@@ -80,7 +85,7 @@ def rewrite_in_style(input_sentence, character):
     corpus = character_dialogues[character]
     embeddings = character_embeddings[character]
 
-    # Find top-5 similar lines to use as style examples
+    # Find top-5 similar lines
     input_emb = embedder.encode(input_sentence, convert_to_tensor=True)
     scores = util.cos_sim(input_emb, embeddings)[0]
     top_idx = torch.topk(scores, 5).indices.tolist()
@@ -98,9 +103,9 @@ Here are 5 authentic examples of {character}'s speech patterns:
 5. {examples[4]}
 
 Guidelines:
-- Keep the meaning of the original sentence.
-- Match {character}'s tone, vocabulary, pacing, and quirks.
-- Output should sound like an actual sitcom line spoken by {character}.
+- Keep the meaning.
+- Match tone, vocabulary, pacing, and quirks.
+- Output must sound like a genuine sitcom line spoken by {character}.
 
 Sentence: "{input_sentence}"
 
@@ -115,13 +120,12 @@ Rewritten in {character}'s style:
 
     return response.choices[0].message.content.strip()
 
-
 # ============================================================
 # 7. Interactive CLI
 # ============================================================
 if __name__ == "__main__":
 
-    print("\n========== Sitcom Character Style Transfer (OpenAI Version) ==========\n")
+    print("\n========== Sitcom Character Style Transfer (OpenAI Version, FAST) ==========\n")
 
     sentence = input("Enter a sentence you want rewritten:\n> ")
 
