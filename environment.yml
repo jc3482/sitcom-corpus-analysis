@@ -29,6 +29,9 @@ dependencies:
       # NLP tools
       - spacy>=3.8.0
       - nltk>=3.8.0
+      - torch>=2.9.1
+      - sentence-transformers>=5.1.2
+      - openai>=2.9.0
 
       # Machine learning model
       - xgboost>=2.0.0
