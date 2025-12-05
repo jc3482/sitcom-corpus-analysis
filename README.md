@@ -7,6 +7,20 @@ A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrie
 
 ### 1. Environment Setup
 
+To use the features of our mini Character AI, you must obtain your own API key from the **OpenAI website**.
+
+1. Visit https://platform.openai.com/ to generate your personal API key.
+
+2. Add the key to your environment variables by running the following command in your terminal:
+
+```bash
+export OPENAI_API_KEY="your_api_key_here"
+```
+
+3. Download the required `.pkl` file from Google Drive: https://drive.google.com/file/d/1EPh6voK3PXphIm0PeIrFI8JVRjoOf1QO/view?usp=drive_link, and move it to the root folder.
+
+Then run the following code:
+
 ```bash
 # Create conda environment
 conda env create -f environment.yml
