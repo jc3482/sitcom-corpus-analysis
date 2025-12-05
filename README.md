@@ -34,18 +34,18 @@ pip install pytest pytest-cov
 
 ```bash
 # Information Retrieval
-sitcom search friends "coffee shop"
-sitcom search-all "thanksgiving"
-sitcom list
+sitcom list                                       # list of shows
+sitcom search-all "thanksgiving"                  # search all shows
+sitcom search friends "coffee shop"               # search one specific show
+sitcom search friends "wedding&dress"             # search one specific show with two keywords
 
+sitcom search friends "ross in leather pants"
 # MBTI Personality Prediction
 sitcom mbti
 
 # Combined Features 
 sitcom analyze friends "wedding"                  # Search + character personalities
-sitcom character friends "Ross Geller"            # Character MBTI profile
-sitcom character friends "Ross" "dinosaurs"       # Character MBTI + search dialogue
-sitcom personalities friends                      # List all character MBTIs
+sitcom character friends Ross                     # Character MBTI profile
 ```
 
 #### Individual Package Interfaces
@@ -54,6 +54,7 @@ sitcom personalities friends                      # List all character MBTIs
 # Information Retrieval
 python -m information_retrieval search friends "coffee shop"
 sitcom-search search friends "coffee shop"
+sitcom-search search friends "coffee shop" 
 
 # MBTI Prediction
 python -m mbti_prediction

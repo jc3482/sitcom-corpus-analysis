@@ -62,3 +62,4 @@ saved_models/
 htmlcov/
 *.cover
 .hypothesis/
+__MACOSX/

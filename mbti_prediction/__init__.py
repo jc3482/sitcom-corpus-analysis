@@ -20,7 +20,10 @@ from .mbti_prediction import (
     load_bundle,
     load_all_dialogues,
     predict_mbti_for_character,
-    score_quotes_for_character
+    score_quotes_for_character,
+    SHOW_FILES,
+    SHOW_DISPLAY_NAMES,
+    SHOW_ALIASES,
 )
 
 from .data_processing import preprocess_text
