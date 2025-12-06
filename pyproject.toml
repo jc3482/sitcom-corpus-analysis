@@ -41,6 +41,7 @@ dev = [
 sitcom-search = "information_retrieval.__main__:main"
 sitcom-mbti   = "mbti_prediction.__main__:main"
 sitcom        = "sitcom_analysis.__main__:main"
+sitcom-style = "sitcom_analysis.style_transfer_module:main"
 
 [tool.setuptools]
 packages = ["information_retrieval", "mbti_prediction", "sitcom_analysis"]

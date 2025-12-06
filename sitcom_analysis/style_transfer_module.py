@@ -17,7 +17,7 @@ CACHE_PATH = Path(__file__).parent / "embedding_cache.pkl"
 
 
 # ============================================================
-# Lazy loading (only load when needed)
+# Lazy loading
 # ============================================================
 def load_resources():
     global _embedder, _character_dialogues, _character_embeddings, _client
@@ -89,7 +89,7 @@ def load_embeddings():
 
 
 # ============================================================
-# Main style transfer function
+# Style Transfer Function
 # ============================================================
 def run_style_transfer(input_sentence, character):
     embedder, client, character_dialogues, character_embeddings = load_resources()
@@ -128,3 +128,43 @@ Output:
     )
 
     return response.choices[0].message.content.strip()
+
+
+# ============================================================
+# CLI ENTRYPOINT (for pyproject.toml)
+# ============================================================
+def main():
+    """
+    CLI command:
+        sitcom-style CHARACTER "sentence"
+        sitcom-style --list
+    """
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Sitcom Style Transfer CLI")
+    parser.add_argument("character", type=str, nargs="?", help="Character name")
+    parser.add_argument("text", type=str, nargs="?", help="Text to rewrite")
+    parser.add_argument("--list", action="store_true", help="List all available characters")
+    args = parser.parse_args()
+
+    # Load resources to access character list
+    _, _, character_dialogues, _ = load_resources()
+
+    # Handle: sitcom-style --list
+    if args.list:
+        chars = sorted(character_dialogues.keys())
+        print(f"Available characters ({len(chars)}):")
+        for c in chars:
+            print(" -", c)
+        return
+
+    # Missing arguments
+    if not args.character or not args.text:
+        print("Error: You must provide both CHARACTER and TEXT.")
+        print('Example: sitcom-style Joey "How you doin?"')
+        return
+
+    # Run style transfer
+    output = run_style_transfer(args.text, args.character)
+    print(output)
+
