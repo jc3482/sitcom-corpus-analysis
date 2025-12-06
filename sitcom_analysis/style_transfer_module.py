@@ -20,7 +20,7 @@ CACHE_PATH = Path(__file__).parent / "embedding_cache.pkl"
 # Lazy loading
 # ============================================================
 def load_resources():
-    global _embedder, _character_dialogues, _character_embeddings, _client
+    global _embedder, _client, _character_dialogues, _character_embeddings
 
     if _embedder is None:
         print("Loading embedding model...")
@@ -60,10 +60,11 @@ def load_all_dialogues():
     ])
 
     character_dialogues = {}
+
     for char, group in df.groupby("character"):
         if isinstance(char, str) and len(char) >= 3:
             lines = [x for x in group["dialogue"].astype(str).tolist() if len(x) > 5]
-            if len(lines) >= 120:
+            if len(lines) >= 120:   # only include characters with >=120 lines
                 character_dialogues[char] = lines
 
     return character_dialogues
@@ -84,6 +85,7 @@ def load_embeddings():
         char: _embedder.encode(lines, convert_to_tensor=True)
         for char, lines in _character_dialogues.items()
     }
+
     pickle.dump(embeddings, open(CACHE_PATH, "wb"))
     return embeddings
 
@@ -100,7 +102,6 @@ def run_style_transfer(input_sentence, character):
     corpus = character_dialogues[character]
     embeddings = character_embeddings[character]
 
-    # Find top-5 similar lines
     input_emb = embedder.encode(input_sentence, convert_to_tensor=True)
     scores = util.cos_sim(input_emb, embeddings)[0]
     top_idx = torch.topk(scores, 5).indices.tolist()
@@ -131,26 +132,42 @@ Output:
 
 
 # ============================================================
-# CLI ENTRYPOINT (for pyproject.toml)
+# Interactive mode
+# ============================================================
+def interactive_mode(character):
+    print(f"\n=== Interactive Style Transfer Mode (Character: {character}) ===")
+    print("Type a sentence and press Enter. Type 'quit' to exit.\n")
+
+    load_resources()
+
+    while True:
+        msg = input("You: ").strip()
+        if msg.lower() in ["quit", "exit", "q"]:
+            print("\nGoodbye!\n")
+            break
+
+        try:
+            output = run_style_transfer(msg, character)
+            print(f"{character}: {output}\n")
+        except Exception as e:
+            print(f"[ERROR] {e}")
+
+
+# ============================================================
+# CLI ENTRYPOINT
 # ============================================================
 def main():
-    """
-    CLI command:
-        sitcom-style CHARACTER "sentence"
-        sitcom-style --list
-    """
     import argparse
 
     parser = argparse.ArgumentParser(description="Sitcom Style Transfer CLI")
     parser.add_argument("character", type=str, nargs="?", help="Character name")
     parser.add_argument("text", type=str, nargs="?", help="Text to rewrite")
-    parser.add_argument("--list", action="store_true", help="List all available characters")
+    parser.add_argument("--list", action="store_true", help="List available characters")
     args = parser.parse_args()
 
-    # Load resources to access character list
     _, _, character_dialogues, _ = load_resources()
 
-    # Handle: sitcom-style --list
+    # List available characters
     if args.list:
         chars = sorted(character_dialogues.keys())
         print(f"Available characters ({len(chars)}):")
@@ -158,13 +175,23 @@ def main():
             print(" -", c)
         return
 
-    # Missing arguments
-    if not args.character or not args.text:
-        print("Error: You must provide both CHARACTER and TEXT.")
-        print('Example: sitcom-style Joey "How you doin?"')
+    # No args → show help
+    if not args.character:
+        print("Usage:")
+        print('  sitcom-style Sheldon "This is illogical."')
+        print("  sitcom-style Sheldon        (interactive mode)")
+        print("  sitcom-style --list")
         return
 
-    # Run style transfer
-    output = run_style_transfer(args.text, args.character)
-    print(output)
+    # Interactive mode
+    if args.text is None:
+        interactive_mode(args.character)
+        return
 
+    # Single sentence mode
+    result = run_style_transfer(args.text, args.character)
+    print(result)
+
+
+if __name__ == "__main__":
+    main()
