@@ -33,6 +33,9 @@ COMMANDS:
         character <show> <name> "<query>" Character MBTI + search their dialogue
         personalities <show>             List MBTI for all major characters
 
+    Style Transfer:
+        style <character> "<text>"       Rewrite text to match character's speaking style
+
 OPTIONS:
     --top N              Number of results (default: 5)
     --title-weight N     Title boost weight (default: 2)
@@ -43,10 +46,9 @@ EXAMPLES:
     sitcom mbti
     sitcom analyze friends "thanksgiving"
     sitcom character friends "Ross Geller"
-    sitcom character friends "Ross" "dinosaurs"
+    sitcom character friends Ross "dinosaurs"
     sitcom personalities friends
-
-For more info, see README.md
+    sitcom style Joey "How are you doing today?"
 """)
 
 
@@ -179,7 +181,6 @@ def cmd_character(args):
         print(f"\n--- Top {len(result['top_quotes'])} Representative Quotes ---\n")
         for i, q in enumerate(result['top_quotes'], start=1):
             print(f"[{i}] S{q['season']}E{q['episode']} - {q['episode_title']}")
-            print(f"    Score: {q['score']:.4f}")
             snippet = q['dialogue_raw']
             if len(snippet) > 200:
                 snippet = snippet[:200] + "..."
@@ -240,6 +241,37 @@ def cmd_personalities(args):
     print(f"\n{'='*70}\n")
 
 
+# ----------------------------------------------------------------------
+# NEW STYLE TRANSFER COMMAND
+# ----------------------------------------------------------------------
+def cmd_style(args):
+    """Rewrite text in the speaking style of a sitcom character."""
+    if len(args) < 2:
+        print("Error: 'style' requires <character> \"<text>\"")
+        print("Example: sitcom style Joey \"How are you doing?\"")
+        sys.exit(1)
+
+    character = args[0]
+    text = args[1]
+
+    from .style_transfer_module import run_style_transfer
+
+    print(f"\n{'='*70}")
+    print(f"STYLE TRANSFER: {character}")
+    print(f"{'='*70}\n")
+
+    try:
+        output = run_style_transfer(text, character)
+        print(output)
+    except Exception as e:
+        print(f"[ERROR] {e}")
+
+    print(f"\n{'='*70}\n")
+
+
+# ----------------------------------------------------------------------
+
+
 def main():
     """Main entry point for unified CLI."""
     if len(sys.argv) < 2:
@@ -261,13 +293,17 @@ def main():
     elif command == "mbti":
         cmd_mbti(args)
     
-    # Combined commands (new)
+    # Combined commands
     elif command == "analyze":
         cmd_analyze(args)
     elif command == "character":
         cmd_character(args)
     elif command == "personalities":
         cmd_personalities(args)
+
+    # NEW STYLE COMMAND
+    elif command == "style":
+        cmd_style(args)
     
     # Help and unknown
     elif command in ["help", "--help", "-h"]:
@@ -280,4 +316,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -17,8 +17,6 @@ To use the features of our mini Character AI, you must obtain your own API key f
 export OPENAI_API_KEY="your_api_key_here"
 ```
 
-3. Download the required `.pkl` file from Google Drive: https://drive.google.com/file/d/1EPh6voK3PXphIm0PeIrFI8JVRjoOf1QO/view?usp=drive_link, and move it to the root folder.
-
 Then run the following code:
 
 ```bash

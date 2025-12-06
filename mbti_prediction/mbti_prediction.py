@@ -1,21 +1,30 @@
+from pathlib import Path
 import os
-import sys
 import pandas as pd
 import joblib
 import numpy as np
+import sys
 
 from .data_processing import preprocess_text
 
-BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_bundle.pkl")
-RAW_DATA_DIR = "../raw_data"
+# This file's directory: mbti_prediction/
+BASE_DIR = Path(__file__).parent
 
+# Project raw_data directory (one level above this module)
+RAW_DATA_DIR = BASE_DIR.parent / "raw_data"
+
+# Bundle path (model)
+BUNDLE_PATH = BASE_DIR / "mbti_bundle.pkl"
+
+# CSV paths
 SHOW_FILES = {
-    "friends": os.path.join(RAW_DATA_DIR, "friends_dialogues.csv"),
-    "modern_family": os.path.join(RAW_DATA_DIR, "modern_family_scripts.csv"),
-    "seinfeld": os.path.join(RAW_DATA_DIR, "seinfeld_scripts.csv"),
-    "tbbt": os.path.join(RAW_DATA_DIR, "tbbt_dialogues.csv"),
-    "the_office": os.path.join(RAW_DATA_DIR, "the_office.csv"),
+    "friends": RAW_DATA_DIR / "friends_dialogues.csv",
+    "modern_family": RAW_DATA_DIR / "modern_family_scripts.csv",
+    "seinfeld": RAW_DATA_DIR / "seinfeld_scripts.csv",
+    "tbbt": RAW_DATA_DIR / "tbbt_dialogues.csv",
+    "the_office": RAW_DATA_DIR / "the_office.csv",
 }
+
 
 SHOW_DISPLAY_NAMES = {
     "friends": "Friends",
