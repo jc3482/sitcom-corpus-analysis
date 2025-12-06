@@ -64,3 +64,4 @@ htmlcov/
 *.cover
 .hypothesis/
 __MACOSX/
+miniconda.sh
