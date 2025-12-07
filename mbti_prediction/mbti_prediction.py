@@ -10,7 +10,7 @@ from transformers import AutoTokenizer, AutoModel
 
 from .data_processing import preprocess_text
 
-BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_roberta_bundle.pkl")
+BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_bundle.pkl")
 RAW_DATA_DIR = "../raw_data"
 
 SHOW_FILES = {
@@ -122,16 +122,16 @@ def load_all_dialogues() -> pd.DataFrame:
         print("[ERROR] No dialogue data loaded. Check your CSV paths.")
         sys.exit(1)
 
-    all_df = pd.concat(frames, ignore_index=True)
+    df_all = pd.concat(frames, ignore_index=True)
 
     print("[INFO] Preprocessing dialogues (this may take a moment)...")
-    all_df = preprocess_text(
-        all_df,
+    df_all = preprocess_text(
+        df_all,
         column_name="dialogue",
         remove_mbti_words=False
     )
 
-    return all_df
+    return df_all
 
 
 def _text_to_logits(tokenizer, model, device, text: str, max_len: int):

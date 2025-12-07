@@ -86,7 +86,7 @@ def search_with_character_info(
             predict_mbti_for_character
         )
         
-        tfidf, models, label_mapping, _ = load_bundle()
+        tokenizer, model, label_mapping, _ = load_bundle()
         df_all = load_all_dialogues()
         
         # Get list of characters from the show
@@ -95,7 +95,7 @@ def search_with_character_info(
         # Analyze top characters (limit to avoid slowdown)
         for char in list(show_chars)[:10]:
             mbti_str, _, df_char = predict_mbti_for_character(
-                tfidf, models, label_mapping, df_all, show, char
+                tokenizer, tokenizer, label_mapping, df_all, show, char
             )
             if mbti_str and df_char is not None and not df_char.empty:
                 character_mbti[char] = mbti_str

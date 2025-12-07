@@ -126,7 +126,7 @@ def add_mbti_binary_columns(df, type_col="type"):
 
     return df
 
-data = pd.read_csv("mbti_data.csv")
+data = pd.read_csv("../raw_data/mbti_data.csv")
 
 data = preprocess_text(data, column_name="posts", remove_mbti_words=True)
 df_encoded = add_mbti_binary_columns(data, type_col="type")
