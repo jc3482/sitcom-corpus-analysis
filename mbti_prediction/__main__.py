@@ -11,7 +11,7 @@ from .mbti_prediction import (
 
 def main():
     print("[INFO] Loading MBTI model bundle...")
-    tokenizer, model, label_mapping = load_bundle()
+    tokenizer, model, label_mapping, preproc_info, max_len, device = load_bundle()
 
     print("[INFO] Loading and preprocessing TV scripts...")
     df_all = load_all_dialogues()

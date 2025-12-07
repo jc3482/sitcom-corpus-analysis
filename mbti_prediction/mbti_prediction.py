@@ -11,7 +11,7 @@ from transformers import AutoTokenizer, AutoModel
 from .data_processing import preprocess_text
 
 BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_bundle.pkl")
-RAW_DATA_DIR = "../raw_data"
+RAW_DATA_DIR = "../raw_data/"
 
 SHOW_FILES = {
     "friends": os.path.join(RAW_DATA_DIR, "friends_dialogues.csv"),
