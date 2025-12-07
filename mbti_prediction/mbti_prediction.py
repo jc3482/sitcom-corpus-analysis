@@ -10,8 +10,11 @@ from transformers import AutoTokenizer, AutoModel
 
 from .data_processing import preprocess_text
 
-BUNDLE_PATH = os.path.join(os.path.dirname(__file__), "mbti_bundle.pkl")
-RAW_DATA_DIR = "../raw_data/"
+BASE_DIR = os.path.dirname(__file__)
+ROOT_DIR = os.path.dirname(BASE_DIR)
+
+BUNDLE_PATH = os.path.join(BASE_DIR, "mbti_bundle.pkl")
+RAW_DATA_DIR = os.path.join(ROOT_DIR, "raw_data")
 
 SHOW_FILES = {
     "friends": os.path.join(RAW_DATA_DIR, "friends_dialogues.csv"),
@@ -20,6 +23,7 @@ SHOW_FILES = {
     "tbbt": os.path.join(RAW_DATA_DIR, "tbbt_dialogues.csv"),
     "the_office": os.path.join(RAW_DATA_DIR, "the_office.csv"),
 }
+
 
 SHOW_DISPLAY_NAMES = {
     "friends": "Friends",

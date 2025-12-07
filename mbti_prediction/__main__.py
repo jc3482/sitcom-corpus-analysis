@@ -46,7 +46,7 @@ def main():
             continue
 
         mbti_str, dim_probs, df_char = predict_mbti_for_character(
-            tokenizer, model, label_mapping, df_all, show_key, char_inp
+            tokenizer, model, label_mapping, df_all, show_key, char_inp, max_len, device
         )
 
         if df_char is None or df_char.empty:
@@ -65,7 +65,7 @@ def main():
             print(f"  {dim}: {probs}")
 
         top_quotes = score_quotes_for_character(
-            tokenizer, model, label_mapping, df_char, mbti_str, top_k=5
+            tokenizer, model, label_mapping, df_char, mbti_str, max_len, device, top_k=5
         )
 
         if not top_quotes:

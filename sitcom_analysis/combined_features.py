@@ -27,12 +27,11 @@ def get_character_mbti(show_key: str, character_name: str) -> Optional[Dict]:
         predict_mbti_for_character
     )
     
-    tfidf, models, label_mapping, _ = load_bundle()
+    tokenizer, model, label_mapping, preproc_info, max_len, device = load_bundle()
     df_all = load_all_dialogues()
     
     mbti_str, dim_probs, df_char = predict_mbti_for_character(
-        tfidf, models, label_mapping, df_all, show_key, character_name
-    )
+    tokenizer, model, label_mapping, df_all, show_key, character_name, max_len, device)
     
     if mbti_str is None or df_char is None or df_char.empty:
         return None
@@ -86,7 +85,7 @@ def search_with_character_info(
             predict_mbti_for_character
         )
         
-        tokenizer, model, label_mapping, _ = load_bundle()
+        tokenizer, model, label_mapping, preproc_info, max_len, device = load_bundle()
         df_all = load_all_dialogues()
         
         # Get list of characters from the show
@@ -95,8 +94,8 @@ def search_with_character_info(
         # Analyze top characters (limit to avoid slowdown)
         for char in list(show_chars)[:10]:
             mbti_str, _, df_char = predict_mbti_for_character(
-                tokenizer, tokenizer, label_mapping, df_all, show, char
-            )
+                        tokenizer, model, label_mapping, df_all, show, char, max_len, device
+                        )
             if mbti_str and df_char is not None and not df_char.empty:
                 character_mbti[char] = mbti_str
     
@@ -137,13 +136,13 @@ def analyze_character_moments(
     )
     
     # Load MBTI components
-    tfidf, models, label_mapping, _ = load_bundle()
+    tokenizer, model, label_mapping, preproc_info, max_len, device = load_bundle()
     df_all = load_all_dialogues()
     
     # Predict MBTI
     mbti_str, dim_probs, df_char = predict_mbti_for_character(
-        tfidf, models, label_mapping, df_all, show, character
-    )
+        tokenizer, model, label_mapping, df_all, show, character, max_len, device
+        )
     
     if mbti_str is None or df_char is None or df_char.empty:
         return {
@@ -153,7 +152,7 @@ def analyze_character_moments(
     
     # Get representative quotes
     top_quotes = score_quotes_for_character(
-        tfidf, models, label_mapping, df_char, mbti_str, top_k
+        tokenizer, model, label_mapping, df_char, mbti_str, max_len, device, top_k=top_k
     )
     
     result = {
@@ -210,7 +209,7 @@ def get_show_character_personalities(show: str, limit: int = 10) -> Dict[str, st
         predict_mbti_for_character
     )
     
-    tfidf, models, label_mapping, _ = load_bundle()
+    tokenizer, model, label_mapping, preproc_info, max_len, device = load_bundle()
     df_all = load_all_dialogues()
     
     # Get characters from the show, sorted by number of lines
@@ -221,7 +220,7 @@ def get_show_character_personalities(show: str, limit: int = 10) -> Dict[str, st
     
     for char in char_counts.index:
         mbti_str, _, df_char = predict_mbti_for_character(
-            tfidf, models, label_mapping, df_all, show, char
+            tokenizer, model, label_mapping, df_all, show, char, max_len, device,
         )
         if mbti_str and df_char is not None and not df_char.empty:
             results[char] = mbti_str

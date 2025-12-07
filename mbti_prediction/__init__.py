@@ -5,14 +5,17 @@ MBTI Personality Prediction Module
 This package provides:
 
 1. Data preprocessing utilities
-2. Functions to load the trained MBTI XGBoost model bundle
+2. Functions to load the trained MBTI BERT model bundle
 3. Convenience prediction functions for:
     - Predicting MBTI for a single text
     - Predicting MBTI for all dialogues of a character
 4. Optional baseline (Naive Bayes) classifier
 
-The main entry point for CLI usage is in:
-    mbti_bundle/main.py
+The main entry point for CLI usage is:
+
+    python -m mbti_prediction
+
+(or equivalently, mbti_prediction.__main__)
 
 """
 
