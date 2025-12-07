@@ -17,18 +17,21 @@ keywords = ["nlp", "information-retrieval", "mbti", "sitcom", "text-analysis"]
 dependencies = [
     "pandas>=2.0.0",
     "numpy>=1.24.0,<2.3.0",
+    "scikit-learn>=1.3.0",
+    "scipy>=1.11.0",
+    "joblib>=1.3.0",
+    "tqdm>=4.65.0",
     "rank-bm25>=0.2.2",
     "spacy>=3.8.0",
     "nltk>=3.8.0",
-    "scikit-learn>=1.3.0",
-    "xgboost>=2.0.0",
-    "joblib>=1.3.0",
-    "scipy>=1.11.0",
-    "tqdm>=4.65.0",
-    "torch>=2.9.1",
+    "torch>=2.9.0",
+    "torchvision>=0.24.0",
+    "torchaudio>=2.9.0",
     "sentence-transformers>=5.1.2",
+    "transformers>=4.57.2",
     "openai>=2.9.0"
 ]
+
 
 [project.optional-dependencies]
 dev = [

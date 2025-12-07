@@ -45,6 +45,7 @@ dist/
 information_retrieval/cache/
 saved_models/
 embedding_cache.pkl
+*.pkl
 
 # -----------------------------
 # IDE and editors

@@ -6,6 +6,7 @@ name: sitcom-env
 channels:
   - conda-forge
   - defaults
+  - pytorch
 
 dependencies:
   - python=3.11
@@ -29,12 +30,14 @@ dependencies:
       # NLP tools
       - spacy>=3.8.0
       - nltk>=3.8.0
-      - torch>=2.9.1
+      - torch>=2.9.0
       - sentence-transformers>=5.1.2
       - openai>=2.9.0
+      - torchvision>=0.24.0
+      - torchaudio>=2.9.0
 
-      # Machine learning model
-      - xgboost>=2.0.0
+      # RoBERTa model
+      - transformers>=4.57.2
 
       # OPTIONAL — if you want them (not required)
       # - jupyter>=1.0.0

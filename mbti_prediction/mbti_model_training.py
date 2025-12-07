@@ -1,11 +1,12 @@
 import re
-from nltk.corpus import stopwords
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from xgboost import XGBClassifier
-from sklearn.model_selection import RandomizedSearchCV
-from scipy.stats import randint, uniform
 import joblib
+import torch
+from torch.utils.data import Dataset, DataLoader
+from transformers import AutoTokenizer, AutoModel, get_linear_schedule_with_warmup
+import torch.nn as nn
+import numpy as np
+from sklearn.metrics import accuracy_score
 
 def preprocess_text(
     df,
@@ -23,31 +24,16 @@ def preprocess_text(
     df[column_name] = df[column_name].apply(
         lambda x: re.sub(r'https?:\/\/\S+', '', x.replace("|", " "))
     )
-    # 2. Keep the End Of Sentence characters
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'\.', ' EOSTokenDot ', x + " "))
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'\?', ' EOSTokenQuest ', x + " "))
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'!', ' EOSTokenExs ', x + " "))
 
-    # 3. Lowercase EARLY
+    # 2. Lowercase EARLY
     df[column_name] = df[column_name].str.lower()
 
-    # 4. Remove punctuation
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'[^\w\s]', ' ', x))
-
-    # 5. Remove non-letter characters
-    df[column_name] = df[column_name].apply(lambda x: re.sub(r'[^a-z\s]', ' ', x))
-
-    # 6. Reduce repeated letters ("soooo" → "soo")
-    df[column_name] = df[column_name].apply(
-        lambda x: re.sub(r'([a-z])\1{2,}', r'\1\1', x)
-    )
-
-    # 7. Remove extremely long nonsense words
+    # 3. Remove extremely long nonsense words
     df[column_name] = df[column_name].apply(
         lambda x: re.sub(r'\b\w{30,1000}\b', ' ', x)
     )
 
-    # 8. Remove MBTI labels (optional)
+    # 4. Remove MBTI labels (optional)
     if remove_mbti_words:
         mbti_types = [
             'infp','infj','intp','intj','entp','enfp','istp','isfp',
@@ -56,13 +42,7 @@ def preprocess_text(
         pattern = re.compile(r'\b(' + "|".join(mbti_types) + r')\b')
         df[column_name] = df[column_name].apply(lambda x: pattern.sub(' ', x))
 
-    # 9. Remove stopwords
-    STOP_WORDS = set(stopwords.words("english"))
-    df[column_name] = df[column_name].apply(
-        lambda text: " ".join([w for w in text.split() if w not in STOP_WORDS])
-    )
-
-    # 10. Remove character names
+    # 5. Remove character names
     names = [
         "Sheldon", "Cooper",
         "Leonard", "Hofstadter",
@@ -122,7 +102,7 @@ def preprocess_text(
         lambda text: " ".join([w for w in text.split() if w not in names])
         )
 
-    # 11. Final whitespace normalize
+    # 6. Final whitespace normalize
     df[column_name] = df[column_name].apply(lambda x: re.sub(r'\s+', ' ', x).strip())
 
     return df
@@ -146,93 +126,235 @@ def add_mbti_binary_columns(df, type_col="type"):
 
     return df
 
-data = pd.read_csv("../raw_data/mbti_data.csv")
+data = pd.read_csv("mbti_data.csv")
 
 data = preprocess_text(data, column_name="posts", remove_mbti_words=True)
 df_encoded = add_mbti_binary_columns(data, type_col="type")
-
-tfidf = TfidfVectorizer(max_features=1500)
-X = tfidf.fit_transform(df_encoded["posts"])
-
 dimension_cols = ["EI", "SN", "TF", "JP"]
+texts = df_encoded["posts"].tolist()
+labels = df_encoded[dimension_cols].values
+types = data["type"]
+
+MODEL_NAME = "roberta-base"
+
+tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+max_len = 500 
+
+class MBTIDataset(Dataset):
+    def __init__(self, texts, labels, tokenizer, max_len=256):
+        self.texts = texts
+        self.labels = labels
+        self.tokenizer = tokenizer
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        text  = str(self.texts[idx])
+        label = self.labels[idx]  # shape (4,)
+
+        enc = self.tokenizer(
+            text,
+            padding="max_length",
+            truncation=True,
+            max_length=self.max_len,
+            return_tensors="pt"
+        )
+
+        return {
+            "input_ids": enc["input_ids"].squeeze(0),
+            "attention_mask": enc["attention_mask"].squeeze(0),
+            "labels": torch.tensor(label, dtype=torch.float)
+        }
+
+from sklearn.model_selection import train_test_split
+
+indices = np.arange(len(texts))
+
+train_indices, test_indices = train_test_split(
+    indices,
+    test_size=0.2,
+    random_state=42,
+    stratify=types
+)
+
+train_indices_final, val_indices = train_test_split(
+    train_indices,
+    test_size=0.125,
+    random_state=42,
+    stratify=types.iloc[train_indices] 
+)
+
+train_texts = [texts[i] for i in train_indices_final]
+val_texts   = [texts[i] for i in val_indices]
+test_texts  = [texts[i] for i in test_indices]
+
+train_labels = labels[train_indices_final]
+val_labels   = labels[val_indices]
+test_labels  = labels[test_indices]
+
+train_dataset = MBTIDataset(train_texts, train_labels, tokenizer, max_len=max_len)
+val_dataset   = MBTIDataset(val_texts,   val_labels,   tokenizer, max_len=max_len)
+test_dataset  = MBTIDataset(test_texts,  test_labels,  tokenizer, max_len=max_len)
+
+train_loader = DataLoader(train_dataset, batch_size=8, shuffle=True)
+val_loader   = DataLoader(val_dataset,   batch_size=8, shuffle=False)
+test_loader  = DataLoader(test_dataset,  batch_size=8, shuffle=False)
 
 
-param_distributions = {
-    "n_estimators": randint(100, 400),      # integer between 100 and 399
-    "max_depth": randint(3, 8),             # 3–7
-    "learning_rate": uniform(0.01, 0.15),   # 0.01–0.16
-    "subsample": uniform(0.6, 0.4),         # 0.6–1.0
-    "colsample_bytree": uniform(0.6, 0.4),  # 0.6–1.0
-}
+class MBTIBertModel(nn.Module):
+    def __init__(self, model_name="bert-base-uncased", num_labels=4, dropout=0.2):
+        super().__init__()
+        self.bert = AutoModel.from_pretrained(model_name)
+        hidden_size = self.bert.config.hidden_size
+        self.dropout = nn.Dropout(dropout)
+        self.classifier = nn.Linear(hidden_size, num_labels)  # 4 维输出
 
-best_params_per_dim = {}
-best_scores_per_dim = {}
+    def forward(self, input_ids, attention_mask, labels=None):
+        outputs = self.bert(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+        pooled = outputs.last_hidden_state[:, 0, :]
+        pooled = self.dropout(pooled)
+        logits = self.classifier(pooled)   # batch_size x 4
 
+        loss = None
+        if labels is not None:
+            loss_fct = nn.BCEWithLogitsLoss()
+            loss = loss_fct(logits, labels)
+
+        return logits, loss
+
+
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+
+
+model = MBTIBertModel(model_name=MODEL_NAME, num_labels=4, dropout=0.2).to(device)
+
+epochs   = 10
+lr       = 2e-5
+patience = 3
+min_delta = 0.0
+
+optimizer = torch.optim.AdamW(model.parameters(), lr=lr)
+total_steps = len(train_loader) * epochs
+
+scheduler = get_linear_schedule_with_warmup(
+    optimizer,
+    num_warmup_steps=int(0.1 * total_steps),
+    num_training_steps=total_steps
+)
+
+def train_epoch(model, data_loader, optimizer, scheduler, device):
+    model.train()
+    total_loss = 0.0
+
+    for batch in data_loader:
+        optimizer.zero_grad()
+
+        input_ids      = batch["input_ids"].to(device)
+        attention_mask = batch["attention_mask"].to(device)
+        labels         = batch["labels"].to(device)
+
+        logits, loss = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            labels=labels
+        )
+
+        loss.backward()
+        optimizer.step()
+        if scheduler is not None:
+            scheduler.step()
+        total_loss += loss.item()
+
+    return total_loss / len(data_loader)
+
+
+def eval_epoch(model, data_loader, device):
+    model.eval()
+    total_loss = 0.0
+
+    all_labels = []
+    all_preds  = []
+
+    with torch.no_grad():
+        for batch in data_loader:
+            input_ids      = batch["input_ids"].to(device)
+            attention_mask = batch["attention_mask"].to(device)
+            labels         = batch["labels"].to(device)
+
+            logits, loss = model(
+                input_ids=input_ids,
+                attention_mask=attention_mask,
+                labels=labels
+            )
+
+            total_loss += loss.item()
+
+            probs = torch.sigmoid(logits)     # (batch, 4)
+            preds = (probs > 0.5).long()
+            all_labels.append(labels.cpu())
+            all_preds.append(preds.cpu())
+
+    all_labels = torch.cat(all_labels, dim=0).numpy()
+    all_preds  = torch.cat(all_preds,  dim=0).numpy()
+
+    acc_per_dim = {}
+    for i, dim in enumerate(dimension_cols):
+        acc_per_dim[dim] = accuracy_score(all_labels[:, i], all_preds[:, i])
+
+    avg_loss = total_loss / len(data_loader)
+    return avg_loss, acc_per_dim
+
+
+best_val_loss = float("inf")
+best_state_dict = None
+best_val_acc_per_dim = None
+patience_counter = 0
+
+for epoch in range(1, epochs + 1):
+    train_loss = train_epoch(model, train_loader, optimizer, scheduler, device)
+    val_loss, val_acc_per_dim = eval_epoch(model, val_loader, device)
+
+    print(f"\nEpoch {epoch}/{epochs}")
+    print(f"Train loss: {train_loss:.4f} | Val loss: {val_loss:.4f}")
+    for dim in dimension_cols:
+        print(f"  Val accuracy {dim}: {val_acc_per_dim[dim]:.4f}")
+
+    if val_loss + min_delta < best_val_loss:
+        best_val_loss = val_loss
+        best_state_dict = model.state_dict()
+        best_val_acc_per_dim = val_acc_per_dim
+        patience_counter = 0
+        print("  -> New best model on val set! (saved in memory)")
+    else:
+        patience_counter += 1
+        print(f"  -> No improvement, patience {patience_counter}/{patience}")
+        if patience_counter >= patience:
+            print("Early stopping triggered.")
+            break
+
+if best_state_dict is not None:
+    model.load_state_dict(best_state_dict)
+else:
+    print("[WARNING] best_state_dict is None, using last-epoch model.")
+
+test_loss, test_acc_per_dim = eval_epoch(model, test_loader, device)
+print("\n=== Final Test Performance ===")
+print(f"Test loss: {test_loss:.4f}")
 for dim in dimension_cols:
-    print(f"\n=== Random search for {dim} ===")
-    y = df_encoded[dim].values
+    print(f"  Test accuracy {dim}: {test_acc_per_dim[dim]:.4f}")
 
-    base_model = XGBClassifier(
-        objective="binary:logistic",
-        eval_metric="logloss",
-        random_state=7
-    )
-
-    rand_search = RandomizedSearchCV(
-        estimator=base_model,
-        param_distributions=param_distributions,
-        n_iter=30,
-        scoring="accuracy",  # or "f1"
-        cv=3,
-        n_jobs=-1,
-        verbose=1,
-        random_state=42
-    )
-
-    rand_search.fit(X, y)
-
-    print(f"Best score for {dim}: {rand_search.best_score_:.4f}")
-    print("Best params:", rand_search.best_params_)
-
-    best_params_per_dim[dim] = rand_search.best_params_
-    best_scores_per_dim[dim] = rand_search.best_score_
-
-print("\n" + "="*60)
-print(" BEST PARAMETER SUMMARY FOR ALL DIMENSIONS ")
-print("="*60)
-
-for dim in dimension_cols:
-    print(f"\n>>> {dim}")
-    print("Best CV score:", round(best_scores_per_dim[dim], 4))
-    print("Best parameters:")
-    for k, v in best_params_per_dim[dim].items():
-        print(f"  - {k}: {v}")
-
-print("="*60 + "\n")
-
-final_models = {}
-
-for dim in dimension_cols:
-    print(f"\n=== Training FINAL model for {dim} with best params ===")
-    y = df_encoded[dim].values
-    best_params = best_params_per_dim[dim]
-
-    final_model = XGBClassifier(
-        objective="binary:logistic",
-        eval_metric="logloss",
-        random_state=7,
-        **best_params
-    )
-
-    final_model.fit(X, y)
-    final_models[dim] = final_model
-
+save_path = "mbti_bundle.pkl"
 
 bundle = {
-    "tfidf": tfidf,
-    "models": final_models,                 # dict: {"EI": model, "SN": model, ...}
-    "best_params": best_params_per_dim,     # best params found by RandomizedSearchCV
-    "cv_scores": best_scores_per_dim,       # mean CV scores from tuning
+    "tokenizer_name": MODEL_NAME,
+    "max_len": max_len,
+    "state_dict": model.state_dict(),
     "label_mapping": {
         "EI": {1: "E", 0: "I"},
         "SN": {1: "S", 0: "N"},
@@ -242,13 +364,17 @@ bundle = {
     "preprocessing_info": {
         "column_name": "posts",
         "remove_mbti_words": True,
-        "searching": False,
-        "max_features_tfidf": 1500,
+        "remove_names": True,
+    },
+    "val_metrics": {
+        "best_val_loss": best_val_loss,
+        "accuracy_per_dim": best_val_acc_per_dim,
+    },
+    "test_metrics": {
+        "test_loss": test_loss,
+        "accuracy_per_dim": test_acc_per_dim,
     }
 }
 
-
-save_path = "mbti_bundle.pkl"
-
 joblib.dump(bundle, save_path)
-print("Bundle keys:", list(bundle.keys()))
+print("Saved RoBERTa MBTI bundle to", save_path)
