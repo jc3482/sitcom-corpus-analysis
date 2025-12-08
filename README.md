@@ -134,6 +134,7 @@ sitcom-corpus-analysis/
 ├── sitcom_analysis/            # Unified integration layer 
 │   ├── __init__.py            # Exports from both packages
 │   ├── __main__.py            # Unified CLI
+│   ├── style_transfer_module.py     
 │   └── combined_features.py   # Cross-package features
 │
 └── raw_data/                   # Data files
@@ -251,6 +252,11 @@ sitcom analyze friends "wedding"
 # Independent interfaces 
 sitcom-search list
 sitcom-mbti
+
+# Style Transfer Interface
+sitcom-style --list
+sitcom-style Sheldon "This is highly illogical."
+sitcom-style Sheldon
 ```
 
 ### Verify Installation
