@@ -1,13 +1,13 @@
 # Sitcom Corpus Analysis
 ## Author: Stacy Che, Qiyue Gu, Herry Wei
 
-A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrieval** and **MBTI Personality Prediction** capabilities.
+A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrieval** **MBTI Personality Prediction**, and **Character Style Transfer** capabilities.
 
 ## Quick Start
 
 ### 1. Environment Setup
 
-To use the features of our mini Character AI, you must obtain your own API key from the **OpenAI website**.
+To use the features of our **Character Style Transfer**, you must obtain your own API key from the **OpenAI website**.
 
 1. Visit https://platform.openai.com/ to generate your personal API key.
 
@@ -17,7 +17,9 @@ To use the features of our mini Character AI, you must obtain your own API key f
 export OPENAI_API_KEY="your_api_key_here"
 ```
 
-Then run the following code:
+Download our models for **MBTI Personality Prediction**, and **Character Style Transfer** from this Google Drive link: https://drive.google.com/drive/folders/1oxtXMy6T3tFbxBAVx9tuY_NeP3ahCzF-?usp=sharing, and add them to directed folder(`embedding_cache.pkl`in root folder, `mbti_bundle.pkl` in mbti_prediction folder)
+
+Run the following code:
 
 ```bash
 # Create conda environment
@@ -51,13 +53,13 @@ sitcom search-all "thanksgiving"                  # search all shows
 sitcom search friends "coffee shop"               # search one specific show
 sitcom search friends "wedding&dress"             # search one specific show with two keywords
 
-sitcom search friends "ross in leather pants"
 # MBTI Personality Prediction
-sitcom mbti
-
-# Combined Features 
 sitcom analyze friends "wedding"                  # Search + character personalities
 sitcom character friends Ross                     # Character MBTI profile
+sitcom personalities friends                      # Character MBTI profiles from an entire show
+
+# Style Transfer
+
 ```
 
 #### Individual Package Interfaces
