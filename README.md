@@ -3,6 +3,20 @@
 
 A comprehensive toolkit for analyzing sitcom dialogues with **Information Retrieval** **MBTI Personality Prediction**, and **Character Style Transfer** capabilities.
 
+**⚠️ Important Note:**
+
+Our **MBTI Personality Prediction** and **Character Style Transfer** functions require a **GPU-enabled** environment to run properly.
+
+We also provide a lightweight Jupyter Notebook version of the MBTI prediction tool in the shared Google Drive folder (link in the section below). To use this notebook:
+
+1. Upload both the notebook and the mbti_bundle.pkl file to Google Colab.
+
+2. Go to Runtime → Change runtime type → select GPU.
+
+3. Modify the test_text variable in the notebook with any text you want to analyse.
+
+This notebook is intended as a quick demo and does not include the full package functionality.
+
 ## Quick Start
 
 ### 1. Environment Setup
