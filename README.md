@@ -166,7 +166,7 @@ sitcom-corpus-analysis/
 
 ### MBTI Personality Prediction
 - 4-dimensional personality classification (E/I, S/N, T/F, J/P)
-- XGBoost models with TF-IDF features
+- RoBERTa model
 - Character-level dialogue aggregation
 - Representative quote extraction
 
@@ -198,7 +198,7 @@ sitcom-corpus-analysis/
 - **BM25**: Information retrieval ranking algorithm
 - **spaCy**: NLP text processing
 - **NLTK**: Natural language toolkit
-- **XGBoost**: MBTI personality prediction model
+- **RoBERTa**: MBTI personality prediction model
 - **pandas**: Data processing
 
 ## Installation Options
@@ -225,7 +225,7 @@ Main packages (see `environment.yml` or `requirements.txt` for complete list):
 - pandas, numpy
 - rank-bm25
 - spacy, nltk
-- scikit-learn, xgboost
+- scikit-learn
 - joblib, scipy
 
 ## Building and Distribution
